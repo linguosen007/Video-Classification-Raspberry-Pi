@@ -103,7 +103,7 @@ def run_classification():
     
     
     node_lookup = NodeLookup()
-    
+    print('Building Graph...')
     # load persistant model from pb
     with tf.gfile.FastGFile(os.path.relpath('classify_image_graph_def.pb'), 'rb') as f:
         graph_def = tf.GraphDef()
@@ -117,10 +117,11 @@ def run_classification():
         softmax_tensor = sess.graph.get_tensor_by_name('softmax:0')
         # we set use_video_port as true to be able to capture 640X480 images then 
         # use gpu resizing in the pipeline to get 320X240
+        camera.start_preview()
         for i, image in enumerate(
                camera.capture_continuous(
                    rawCapture, format='rgb',use_video_port =True, resize=(320,240))):
-            start = time.time()
+            ##start = time.time()
             # convert image to numpy array
             np_image = image.array
             
@@ -131,15 +132,17 @@ def run_classification():
             
             # Sort list of predictions, only return the top prediction
             top = predictions.argsort()[-1:][::-1]
-            end = time.time()-start
+            #end = time.time()-start
             # Lookup the human readable string with node_lookup
             for node_id in top:
                 human_string = node_lookup.id_to_string(node_id)
                 score = predictions[node_id]
-                print('%s (score = %.5f)' % (human_string, score))
-            print('time: ', end)
+                #print('%s (score = %.5f)' % (human_string, score))
+                camera.annotate_text = human_string
+            #print('time: ', end)
             # Truncate the buffer for next image/clear stream
             rawCapture.truncate(0)
             
 if __name__ == '__main__':
     run_classification()
+    camera.stop_preview()
